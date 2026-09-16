@@ -24,10 +24,25 @@ class ValidationResult:
     absolute_error_sum: float
     insufficient_data: int
     evaluated_rows: int
+    baseline_directional_hits: int
 
     @property
     def directional_accuracy(self) -> float | None:
         return self.directional_hits / self.predictions if self.predictions else None
+
+    @property
+    def baseline_directional_accuracy(self) -> float | None:
+        return (
+            self.baseline_directional_hits / self.predictions
+            if self.predictions
+            else None
+        )
+
+    @property
+    def directional_accuracy_delta_vs_baseline(self) -> float | None:
+        if self.directional_accuracy is None or self.baseline_directional_accuracy is None:
+            return None
+        return self.directional_accuracy - self.baseline_directional_accuracy
 
     @property
     def mae(self) -> float | None:
@@ -67,6 +82,7 @@ def walk_forward_validate(
     observations: list[PatternObservation] = []
     reliabilities: dict[str, ReliabilityRecord] = {}
     predictions = directional_hits = insufficient_data = 0
+    baseline_directional_hits = 0
     absolute_error_sum = 0.0
     evaluated_rows = 0
 
@@ -120,6 +136,17 @@ def walk_forward_validate(
                 (prediction.expected_return >= 0 and actual_return >= 0)
                 or (prediction.expected_return < 0 and actual_return < 0)
             )
+
+            # Causal baseline: predict the next candle's direction from the
+            # immediately preceding observed return. It is evaluated on the
+            # exact same rows where Pattern Memory produced a prediction.
+            previous_return = float(
+                data["Close"].iloc[position] / data["Close"].iloc[position - 1] - 1.0
+            )
+            baseline_directional_hits += int(
+                (previous_return >= 0 and actual_return >= 0)
+                or (previous_return < 0 and actual_return < 0)
+            )
             absolute_error_sum += evaluation.absolute_error
 
             # Reliability is updated only after the outcome for this test row
@@ -158,4 +185,5 @@ def walk_forward_validate(
         absolute_error_sum=absolute_error_sum,
         insufficient_data=insufficient_data,
         evaluated_rows=evaluated_rows,
+        baseline_directional_hits=baseline_directional_hits,
     )
