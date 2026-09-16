@@ -16,6 +16,7 @@ from tradingagents.pattern_memory.models import (
 )
 from tradingagents.pattern_memory.predictor import predict_from_matches
 from tradingagents.pattern_memory.reliability import update_reliability
+from tradingagents.pattern_memory.walk_forward import ValidationResult, walk_forward_validate
 
 __all__ = [
     "PatternEvaluation",
@@ -23,8 +24,10 @@ __all__ = [
     "PatternObservation",
     "Prediction",
     "ReliabilityRecord",
+    "ValidationResult",
     "evaluate_prediction",
     "find_matches",
     "predict_from_matches",
     "update_reliability",
+    "walk_forward_validate",
 ]
